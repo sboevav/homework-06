@@ -1,1 +1,0 @@
-{"rsync":{"/vagrant":{"type":"rsync","guestpath":"/vagrant","hostpath":"/Users/lalbrekht/Projects/Otus/stands/05-bash","disabled":false,"__vagrantfile":true,"owner":"vagrant","group":"vagrant"}}}
