@@ -1,0 +1,14 @@
+[Unit]
+Description=Runs watchlog script every 5 seconds
+
+[Timer]
+AccuracySec=1us
+# Run after booting 5 seconds
+OnBootSec=5
+# Run every 5 seconds
+OnUnitActiveSec=5
+Unit=watchlog.service
+
+[Install]
+WantedBy=multi-user.target
+

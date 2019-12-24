@@ -5,15 +5,15 @@ MACHINES = {
   :bash => {
         :box_name => "centos/7",
         :ip_addr => '192.168.11.101'
-  },
-  :mysql => {
-        :box_name => "centos/7",
-        :ip_addr => '192.168.11.102'
-  },
-  :nginx => {
-        :box_name => "centos/7",
-        :ip_addr => '192.168.11.103'
   }
+#  :mysql => {
+#        :box_name => "centos/7",
+#        :ip_addr => '192.168.11.102'
+#  },
+#  :nginx => {
+#        :box_name => "centos/7",
+#        :ip_addr => '192.168.11.103'
+#  }
 }
 
 Vagrant.configure("2") do |config|
@@ -33,10 +33,11 @@ Vagrant.configure("2") do |config|
             vb.customize ["modifyvm", :id, "--memory", "256"]
           end
           
-          box.vm.provision "shell", inline: <<-SHELL
-            mkdir -p ~root/.ssh; cp ~vagrant/.ssh/auth* ~root/.ssh
-            yum install vim -y
-          SHELL
+	 config.vm.provision "shell", path: "scripts/main.sh"
+#          box.vm.provision "shell", inline: <<-SHELL
+#            mkdir -p ~root/.ssh; cp ~vagrant/.ssh/auth* ~root/.ssh
+#            yum install vim -y
+#          SHELL
 
       end
   end

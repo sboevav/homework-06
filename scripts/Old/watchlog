@@ -1,0 +1,4 @@
+# File and word that we will be monit
+WORD="ALERT"
+LOG=/var/log/watchlog.log
+
