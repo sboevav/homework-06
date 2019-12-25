@@ -46,6 +46,21 @@ checkLog () {
 cat $LOG | awk '/GET \/ HTTP/{ ipcount[$1]++ } END { for (i in ipcount) { printf "IP:%15s - %d times\n", i, ipcount[i] } }' | sort -rn | head -10 >> $MESSAGE
 }
 
+VARSFILE=/etc/watchlogvars/vars
+RECNO=0
+TEMPVAR=0
+
+if [ ! -f $VARSFILE ]
+then
+  sudo mkdir -p  echo ${VARSFILE##*/}
+  sudo touch $VARSFILE
+  sudo chmod +777  $VARSFILE
+else
+  read RECNO < "$VARSFILE"
+  logger "RECNO=$RECNO"
+  read TEMPVAR < "$VARSFILE"
+  logger "TEMPVAR=$TEMPVAR"
+fi
 
 # Сформируем текст письма
 createMessageFile
@@ -56,6 +71,12 @@ logger "Message=$(< $MESSAGE)"
 #sudo bash /vagrant/scripts/sendemail.sh $EMAIL "Log_checking" $MESSAGE
 # Удалим исходный файл письма
 rm $MESSAGE
+
+RECNO=$((RECNO+1))
+TEMPVAR=$((TEMPVAR+1000))
+# сохраним переменные в файле
+echo "$RECNO" > $VARSFILE
+echo "$TEMPVAR" >> $VARSFILE
 
 exit 0
 
