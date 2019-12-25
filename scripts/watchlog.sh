@@ -44,23 +44,36 @@ echo "+------------------------------+" >> $MESSAGE
 
 checkLog () {
 cat $LOG | awk '/GET \/ HTTP/{ ipcount[$1]++ } END { for (i in ipcount) { printf "IP:%15s - %d times\n", i, ipcount[i] } }' | sort -rn | head -10 >> $MESSAGE
+cat $LOG | awk '/GET/{ addrcount[$6$7$8]++ } END { for (i in addrcount) { printf "ADDR:%50s - %d times\n", i, addrcount[i] } }' | sort -rn | head -10 >> $MESSAGE
+
+cat $LOG | awk '/GET /{ ipcount[$11]++ } END { for (i in ipcount) { printf "ADDR: %15s - %d times\n", i, ipcount[i] } }' | sort -rn > output
+https://qarchive.ru/10042020_sortirovka_massiva_v_obolochke_s_pomosch_ju_awk
 }
 
 VARSFILE=/etc/watchlogvars/vars
 RECNO=0
-TEMPVAR=0
+#TEMPVAR=0
 
 if [ ! -f $VARSFILE ]
 then
-  sudo mkdir -p  echo ${VARSFILE##*/}
+  sudo mkdir -p  echo ${VARSFILE%/*}
   sudo touch $VARSFILE
   sudo chmod +777  $VARSFILE
 else
   read RECNO < "$VARSFILE"
   logger "RECNO=$RECNO"
-  read TEMPVAR < "$VARSFILE"
-  logger "TEMPVAR=$TEMPVAR"
+#  read TEMPVAR < "$VARSFILE"
+#  logger "TEMPVAR=$TEMPVAR"
 fi
+
+
+#if [ -n "$num" ]; then 
+#      "переменная что-то имеет и можно запустить другой процесс"
+#else
+#   echo "пустая переменная, останавливаем скрипт"	
+#   exit 0;
+#fi
+
 
 # Сформируем текст письма
 createMessageFile
@@ -73,10 +86,11 @@ logger "Message=$(< $MESSAGE)"
 rm $MESSAGE
 
 RECNO=$((RECNO+1))
-TEMPVAR=$((TEMPVAR+1000))
+#TEMPVAR=$((TEMPVAR+1000))
+
 # сохраним переменные в файле
 echo "$RECNO" > $VARSFILE
-echo "$TEMPVAR" >> $VARSFILE
+#echo "$TEMPVAR" >> $VARSFILE
 
 exit 0
 

@@ -10,6 +10,6 @@ sudo cp /vagrant/scripts/watchlog.service /etc/systemd/system/
 sudo cp /vagrant/scripts/watchlog.timer /etc/systemd/system/
 
 sudo systemctl daemon-reload
-sudo systemctl enable watchlog.service 
+sudo systemctl enable watchlog.timer
 sudo systemctl start watchlog.timer
 
