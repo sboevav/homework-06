@@ -14,6 +14,9 @@ ADDR_COUNT=$5
 DATE=`date`
 
 MESSAGE="/tmp/log_checking.txt"
+VARS_FILE=/etc/watchlogvars/vars
+REC_NO=0
+LAST_DATE="-"
 
 #echo "LOG=$LOG"
 #echo "EMAIL=$EMAIL"
@@ -43,26 +46,33 @@ echo "+------------------------------+" >> $MESSAGE
 }
 
 checkLog () {
-cat $LOG | awk '/GET \/ HTTP/{ ipcount[$1]++ } END { for (i in ipcount) { printf "IP:%15s - %d times\n", i, ipcount[i] } }' | sort -rn | head -10 >> $MESSAGE
-cat $LOG | awk '/GET/{ addrcount[$6$7$8]++ } END { for (i in addrcount) { printf "ADDR:%50s - %d times\n", i, addrcount[i] } }' | sort -rn | head -10 >> $MESSAGE
+# рабочий вариант - адрес впереди 
+#cat $LOG | awk '/GET/{ ipcount[$1]++ } END { for (i in ipcount) { printf "IP: %15s - %d times\n", i, ipcount[i] } }' | sort -rnk4 | head -$IP_COUNT
+#cat $LOG | awk '/GET/{ addrcount[$11]++ } END { for (i in addrcount) { printf "ADDR: %50s - %d times\n", i, addrcount[i] } }' | sort -rnk4 | head -$ADDR_COUNT
 
-cat $LOG | awk '/GET /{ ipcount[$11]++ } END { for (i in ipcount) { printf "ADDR: %15s - %d times\n", i, ipcount[i] } }' | sort -rn > output
-https://qarchive.ru/10042020_sortirovka_massiva_v_obolochke_s_pomosch_ju_awk
+  # рабочий вариант - количество впереди
+  echo "$IP_COUNT IP адресов с наибольшим кол-вом запросов" >> $MESSAGE
+  cat $LOG | awk '/GET/{ ipcount[$1]++ } END { for (i in ipcount) { printf "%4d times - IP: %s\n", ipcount[i], i } }' | sort -rnk1 | head -$IP_COUNT >> $MESSAGE
+
+  echo "$ADDR_COUNT запрашиваемых адресов с наибольшим кол-вом запросов" >> $MESSAGE
+  cat $LOG | awk '/GET/{ addrcount[$11]++ } END { for (i in addrcount) { printf "%4d times - addr: %50s\n", addrcount[i], i } }' | sort -rnk1 | head -$ADDR_COUNT >> $MESSAGE
+
+  echo "Полный список запросов со времени последнего запуска ($LAST_DATE), с кодом возврата, отличающегося от 200 и 301" >> $MESSAGE
+  cat $LOG | awk '$9 != 200 && $9 != 301' >> $MESSAGE
+
 }
 
-VARSFILE=/etc/watchlogvars/vars
-RECNO=0
 #TEMPVAR=0
 
-if [ ! -f $VARSFILE ]
+if [ ! -f $VARS_FILE ]
 then
-  sudo mkdir -p  echo ${VARSFILE%/*}
-  sudo touch $VARSFILE
-  sudo chmod +777  $VARSFILE
+  sudo mkdir -p  echo ${VARS_FILE%/*}
+  sudo touch $VARS_FILE
+  sudo chmod +777  $VARS_FILE
 else
-  read RECNO < "$VARSFILE"
-  logger "RECNO=$RECNO"
-#  read TEMPVAR < "$VARSFILE"
+  read REC_NO < "$VARS_FILE"
+  logger "REC_NO=$REC_NO"
+#  read TEMPVAR < "$VAR_SFILE"
 #  logger "TEMPVAR=$TEMPVAR"
 fi
 
@@ -85,12 +95,12 @@ logger "Message=$(< $MESSAGE)"
 # Удалим исходный файл письма
 rm $MESSAGE
 
-RECNO=$((RECNO+1))
+REC_NO=$((REC_NO+1))
 #TEMPVAR=$((TEMPVAR+1000))
 
 # сохраним переменные в файле
-echo "$RECNO" > $VARSFILE
-#echo "$TEMPVAR" >> $VARSFILE
+echo "$REC_NO" > $VARS_FILE
+#echo "$TEMPVAR" >> $VARS_FILE
 
 exit 0
 
