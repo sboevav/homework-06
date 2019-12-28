@@ -1,48 +1,48 @@
 #!/bin/bash
 
-# Обрабатываемый лог-файл
-LOG=$1
-# Адрес почты, куда будет послано сообщение 
-EMAIL=$2
-# Длительность периода, в секундах
-PERIOD=$3
-# Количество IP адресов, посылаемое в сообщении, с которого поступило наибольшее количество запросов
-IP_COUNT=$4
-# Количество запрашиваемых адресов, посылаемое в сообщении, с наибольшим кол-вом запросов
-ADDR_COUNT=$5
-# Дата/время запуска скрипта
-DATE=`date`
+#-------------------------------------------------
+# функции скрипта
 
-MESSAGE=/tmp/log_checking.txt
-VARS_FILE=/etc/watchlogvars/vars
-REC_NO=0
-var1=qw
-var2=123
-LAST_DATE="-"
-
-#logger "LOG=$LOG"
-#logger "EMAIL=$EMAIL"
-#logger "PERIOD=$PERIOD"
-#logger "IP_COUNT=$IP_COUNT"
-#logger "ADDR_COUNT=$ADDR_COUNT"
-#logger "DATE=$DATE"
-
-
-#if grep -i $WORD $LOG &> /dev/null
-#then
-#  logger "$DATE: I found the word $WORD in the log $LOG, Master!"
-#fi
-
-createMessageFile () {
-echo  "Hostname: `hostname`" > $MESSAGE
-echo "+------------------------------+" >> $MESSAGE
-checkLog
-echo "+------------------------------+" >> $MESSAGE
+# считывание сохраненных переменных из файла
+# если файл не существует, то он создается и переменные инициализируются начальным значением
+# допускается формат хранения:
+#  - просто значение в строке (например 12)
+#  - значение с указанием имени переменной (например var1=12)
+LoadVars () {
+  if [ ! -f $VARS_FILE ]
+  then
+    # файл не существует 
+    # создаем файл
+    sudo mkdir -p  echo ${VARS_FILE%/*}
+    sudo touch $VARS_FILE
+    sudo chmod +777  $VARS_FILE
+    # инициализируем переменные начальными значениями
+    REC_NO=0
+    PREV_DATE="-"
+  else
+    # считываем весь файл в массив
+    i=0 
+    while IFS='' read -r line; do 
+      v[$i]=$(echo ${line} | cut -f2 -d'=') 
+      ((i++))
+    done < "$VARS_FILE"
+    # распределяем массив по переменным
+    REC_NO=${v[0]}
+    PREV_DATE=${v[1]}
+  fi
 }
 
-checkLog () {
-  # рабочий вариант - количество впереди
-  echo "Обработка журнала со времени последнего запуска ($LAST_DATE)"
+# сохранение переменных в файл
+# значения необходимо сохранять с указанием имени переменной (например var1=12)
+SaveVars () {
+  echo "REC_NO=$REC_NO" > $VARS_FILE
+  echo "PREV_DATE=$PREV_DATE" >> $VARS_FILE
+}
+
+# обработка журнала
+CheckLog () {
+  echo "Обработка журнала со времени последнего запуска" >> $MESSAGE
+  echo "($PREV_DATE - $DATE)" >> $MESSAGE
 
   echo "$IP_COUNT IP адресов с наибольшим количеством запросов" >> $MESSAGE
   cat $LOG | awk '/GET/{ ipcount[$1]++ } END { for (i in ipcount) { printf "%4d times - IP: %s\n", ipcount[i], i } }' | sort -rnk1 | head -$IP_COUNT >> $MESSAGE
@@ -57,27 +57,43 @@ checkLog () {
   cat $LOG | awk '{ ipcount[$9]++ } END { for (i in ipcount) { printf "result:%4d - %4d times\n", i, ipcount[i]} }' | sort -nk2 >> $MESSAGE
 }
 
-#TEMPVAR=0
+# создание файла с сообщением
+CreateMessageFile () {
+  echo  "Hostname: `hostname`" > $MESSAGE
+  echo "+------------------------------+" >> $MESSAGE
+  CheckLog
+  echo "+------------------------------+" >> $MESSAGE
+}
 
-if [ ! -f $VARS_FILE ]
-then
-  sudo mkdir -p  echo ${VARS_FILE%/*}
-  sudo touch $VARS_FILE
-  sudo chmod +777  $VARS_FILE
-else
-  while read REC_NO var2 var3; 
-  do   
-    logger "REC_NO=$REC_NO"
-    logger "var2=$var2"
-    logger "var3=$var3";
-  done < "$VARS_FILE"
+#-------------------------------------------------
+# объявление переменных
 
-#  awk '{ vars[$1]=$1 } END { for (i in vars) { printf "%10s=%s\n", i, vars[i]} }'
-#  read REC_NO < "$VARS_FILE"
-#  read TEMPVAR < "$VAR_SFILE"
-#  logger "TEMPVAR=$TEMPVAR"
-fi
+# обрабатываемый лог-файл
+LOG=$1
+# адрес почты, куда будет послано сообщение 
+EMAIL=$2
+# длительность периода, в секундах
+PERIOD=$3
+# количество IP адресов, посылаемое в сообщении, с которого поступило наибольшее количество запросов
+IP_COUNT=$4
+# количество запрашиваемых адресов, посылаемое в сообщении, с наибольшим кол-вом запросов
+ADDR_COUNT=$5
+# дата/время запуска скрипта
+DATE=`date`
+# временный файл для создания текста письма
+MESSAGE=/tmp/log_checking.txt
+# файл хранения переменных между вызовами скрипта
+VARS_FILE=/etc/watchlogvars/vars
 
+#logger "LOG=$LOG"
+#logger "EMAIL=$EMAIL"
+#logger "PERIOD=$PERIOD"
+#logger "IP_COUNT=$IP_COUNT"
+#logger "ADDR_COUNT=$ADDR_COUNT"
+#logger "DATE=$DATE"
+
+#-------------------------------------------------
+# Код скрипта
 
 #if [ -n "$num" ]; then
 #      "переменная что-то имеет и можно запустить другой процесс"
@@ -86,27 +102,25 @@ fi
 #   exit 0;
 #fi
 
-
+#  Загрузим сохраненые переменные
+LoadVars
 # Сформируем текст письма
-createMessageFile
+CreateMessageFile
 
 logger "Message=$(< $MESSAGE)"
 
 # Пошлем сформированный файл почты
 #mail -s "Log_checking" "$EMAIL" < $MESSAGE
-sudo bash /vagrant/scripts/sendemail.sh $EMAIL "Log_checking ($DATE)" $MESSAGE
+sudo bash /vagrant/scripts/sendemail.sh $EMAIL "Log_checking ($DATE)" $MESSAGE20
 # Удалим исходный файл письма
 #rm $MESSAGE
 
+# Присвоим новые значения переменным
 REC_NO=$((REC_NO+1))
-#TEMPVAR=$((TEMPVAR+1000))
+PREV_DATE=$DATE
 
-# сохраним переменные в файле
-echo "$REC_NO" > $VARS_FILE
-echo "$var2" >> $VARS_FILE
-echo "$var3" >> $VARS_FILE
-
-#echo "$TEMPVAR" >> $VARS_FILE
+# Сохраним переменные в файле
+SaveVars
 
 exit 0
 
