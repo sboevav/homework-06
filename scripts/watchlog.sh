@@ -82,7 +82,7 @@ SaveVars () {
 CheckLog () {
   echo "Обработка журнала со времени последнего запуска" >> $MESSAGE
   echo "($PREV_DATE - $DATE)" >> $MESSAGE
-  echo "(записи: [$REC _NO; $REC_NO_LAST) )" >> $MESSAGE
+  echo "(записи: [$REC_NO; $REC_NO_LAST) )" >> $MESSAGE
 
   echo -e "\n1)$IP_COUNT IP адресов с наибольшим количеством запросов" >> $MESSAGE
   cat $LOG | awk -v first="$REC_NO" -v last="$REC_NO_LAST" 'first <= NR && NR < last && /GET/{ ipcount[$1]++ } END { for (i in ipcount) { printf "%4d раз - IP: %s\n", ipcount[i], i } }' | sort -rnk1 | head -$IP_COUNT >> $MESSAGE
