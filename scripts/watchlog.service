@@ -4,5 +4,5 @@ Description=My watchlog service
 [Service]
 Type=oneshot
 EnvironmentFile=/etc/sysconfig/watchlog
-ExecStart=/opt/watchlog.sh $LOG $EMAIL $PERIOD $IP_COUNT $ADDR_COUNT
+ExecStart=/opt/watchlog.sh $LOG $EMAIL $RECORD_COUNT $IP_COUNT $ADDR_COUNT
 

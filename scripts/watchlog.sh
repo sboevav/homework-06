@@ -7,8 +7,8 @@
 LOG=$1
 # адрес почты, куда будет послано сообщение 
 EMAIL=$2
-# длительность периода, в секундах
-PERIOD=$3
+# количество обрабатываемых строк
+RECORD_COUNT=$3
 # количество IP адресов, посылаемое в сообщении, с которого поступило наибольшее количество запросов
 IP_COUNT=$4
 # количество запрашиваемых адресов, посылаемое в сообщении, с наибольшим кол-вом запросов
@@ -56,7 +56,7 @@ LoadVars () {
     sudo touch $VARS_FILE
     sudo chmod +777  $VARS_FILE
     # инициализируем переменные начальными значениями
-    REC_NO=0
+    REC_NO=1
     PREV_DATE="-"
   else
     # считываем весь файл в массив
@@ -82,23 +82,24 @@ SaveVars () {
 CheckLog () {
   echo "Обработка журнала со времени последнего запуска" >> $MESSAGE
   echo "($PREV_DATE - $DATE)" >> $MESSAGE
+  echo "(записи: [$REC _NO; $REC_NO_LAST) )" >> $MESSAGE
 
-  echo "$IP_COUNT IP адресов с наибольшим количеством запросов" >> $MESSAGE
-  cat $LOG | awk '/GET/{ ipcount[$1]++ } END { for (i in ipcount) { printf "%4d times - IP: %s\n", ipcount[i], i } }' | sort -rnk1 | head -$IP_COUNT >> $MESSAGE
+  echo -e "\n1)$IP_COUNT IP адресов с наибольшим количеством запросов" >> $MESSAGE
+  cat $LOG | awk -v first="$REC_NO" -v last="$REC_NO_LAST" 'first <= NR && NR < last && /GET/{ ipcount[$1]++ } END { for (i in ipcount) { printf "%4d раз - IP: %s\n", ipcount[i], i } }' | sort -rnk1 | head -$IP_COUNT >> $MESSAGE
 
-  echo "$ADDR_COUNT запрашиваемых адресов с наибольшим количеством запросов" >> $MESSAGE
-  cat $LOG | awk '/GET/{ addrcount[$11]++ } END { for (i in addrcount) { printf "%4d times - addr: %50s\n", addrcount[i], i } }' | sort -rnk1 | head -$ADDR_COUNT >> $MESSAGE
+  echo -e "\n2)$ADDR_COUNT запрашиваемых адресов с наибольшим количеством запросов" >> $MESSAGE
+  cat $LOG | awk -v first="$REC_NO" -v last="$REC_NO_LAST" 'first <= NR && NR < last && /GET/{ addrcount[$11]++ } END { for (i in addrcount) { printf "%4d раз - addr: %50s\n", addrcount[i], i } }' | sort -rnk1 | head -$ADDR_COUNT >> $MESSAGE
 
-  echo "Полный список запросов с кодом возврата, отличающегося от 200 и 301" >> $MESSAGE
-  cat $LOG | awk '$9 != 200 && $9 != 301' >> $MESSAGE
+  echo -e "\n3) Полный список запросов с кодом возврата, отличающегося от 200 и 301" >> $MESSAGE
+  cat $LOG | awk -v first="$REC_NO" -v last="$REC_NO_LAST" 'first <= NR && NR < last && $9 != 200 && $9 != 301' >> $MESSAGE
 
-  echo "Перечень всех кодов возврата с указанием их количества" >> $MESSAGE
-  cat $LOG | awk '{ ipcount[$9]++ } END { for (i in ipcount) { printf "result:%4d - %4d times\n", i, ipcount[i]} }' | sort -nk2 >> $MESSAGE
+  echo -e "\n4) Перечень всех кодов возврата с указанием их количества" >> $MESSAGE
+  cat $LOG | awk -v first="$REC_NO" -v last="$REC_NO_LAST" 'first <= NR && NR < last { ipcount[$9]++ } END { for (i in ipcount) { printf "result:%4d - %4d раз\n", i, ipcount[i]} }' | sort -nk2 >> $MESSAGE
 }
 
 # создание файла с сообщением
 CreateMessageFile () {
-  echo  "Hostname: `hostname`" > $MESSAGE
+  echo  "Имя хоста: `hostname`" > $MESSAGE
   echo "+------------------------------+" >> $MESSAGE
   CheckLog
   echo "+------------------------------+" >> $MESSAGE
@@ -114,20 +115,33 @@ if [[ -f $LOCK_FILE ]]; then
 fi
 
 # заблокируем повторный вызов 
-touch $LOCKFILE
+touch $LOCK_FILE
 # установим трап вызова очистки временных файлов на полученные сигналы  
-trap "Сleanup" INT TERM EXIT
+trap "Cleanup" INT TERM EXIT
 
 # загрузим сохраненые переменные
 LoadVars
+
+# определим номер последней записи
+TOTAL_LINES=$(cat $LOG | awk 'END { print NR }')
+REC_NO_LAST=$((REC_NO+RECORD_COUNT))
+# при отсутсвии новых записей закончим обработку
+if [[ $TOTAL_LINES < $REC_NO ]]; then
+  exit 0;
+fi
+# проверим номер последней обрабатываемой записи
+if [[ $TOTAL_LINES < $REC_NO_LAST ]]
+then
+  REC_NO_LAST=$((TOTAL_LINES+1))  
+fi
+
 # сформируем текст письма
 CreateMessageFile
-#logger "Message=$(< $MESSAGE)"
 # пошлем сформированный файл почты
 sudo bash /vagrant/scripts/sendemail.sh $EMAIL "Log_checking ($DATE)" $MESSAGE
 
 # присвоим новые значения переменным
-REC_NO=$((REC_NO+1))
+REC_NO=$REC_NO_LAST
 PREV_DATE=$DATE
 # сохраним переменные в файле
 SaveVars
