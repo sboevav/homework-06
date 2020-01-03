@@ -2,7 +2,8 @@
 
 Скрипт запускается периодически с помощью сервиса, реализованного на systemd.
 	main.sh - скрипт, запускаемый вагрантом при развертывании машины. Здесь мы устанавливаем  mail для отправки создаваемой почты, копируем необходимые файлы и запускаем наш сервис  
-	```	
+
+	```
 	sudo mkdir -p ~root/.ssh
 	sudo cp ~vagrant/.ssh/auth* ~root/.ssh
 
@@ -17,10 +18,10 @@
 	sudo systemctl daemon-reload
 	sudo systemctl enable watchlog.timer
 	sudo systemctl start watchlog.timer
-	```	
+	```
 
 	watchlog.timer - наш таймер, по которому запускается сервис watchlog.service  
-	```	
+	```
 	[Unit]
 	Description=Runs watchlog script every 5 seconds
 
@@ -34,10 +35,10 @@
 
 	[Install]
 	WantedBy=multi-user.target
-	```	
+	```
 
 	watchlog.service - сервис, запускающий наш скрипт с параметрами  
-	```	
+	```
 	[Unit]
 	Description=My watchlog service
 
@@ -45,10 +46,10 @@
 	Type=oneshot
 	EnvironmentFile=/etc/sysconfig/watchlog
 	ExecStart=/opt/watchlog.sh $LOG $EMAIL $RECORD_COUNT $IP_COUNT $ADDR_COUNT
-	```	
+	```
 
 	watchlog - параметры запуска скрипта  
-	```	
+	```
 	# Обрабатываемый лог-файл
 	LOG=/var/log/watchlog.log
 
@@ -63,7 +64,7 @@
 
 	# Количество запрашиваемых адресов, посылаемое в сообщении, с наибольшим кол-вом запросов
 	ADDR_COUNT=5
-	```	
+	```
 
 В качестве исходных данных у нас имеется предоставленный тестовый файл журнала watchlog.log. Журнал имеет 670 записей. 
 Для демонстрации работы выбран следующий алгоритм:
@@ -72,7 +73,7 @@
 
 ?. Убедимся в периодическом запуске сервиса и запуске нашего скрипта в логе через каждые 5 секунд  
 		[vagrant@bash ~]$ sudo tail -f -n 10 /var/log/messages   
-	```	
+	```
 	Dec 30 10:58:13 localhost systemd: Starting My watchlog service...
 	Dec 30 10:58:13 localhost systemd: Started My watchlog service.
 	Dec 30 10:58:18 localhost systemd: Starting My watchlog service...
@@ -268,6 +269,7 @@
 	result: 500 -    1 раз
 	+------------------------------+
 	```
+
 
 
 
