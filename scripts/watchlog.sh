@@ -22,13 +22,6 @@ VARS_FILE=/etc/watchlogvars/vars
 # файл блокировки повторного запуска скрипта
 LOCK_FILE=/tmp/watchloglockfile
 
-#logger "LOG=$LOG"
-#logger "EMAIL=$EMAIL"
-#logger "PERIOD=$PERIOD"
-#logger "IP_COUNT=$IP_COUNT"
-#logger "ADDR_COUNT=$ADDR_COUNT"
-#logger "DATE=$DATE"
-
 #-------------------------------------------------
 # функции скрипта
 
@@ -84,10 +77,10 @@ CheckLog () {
   echo "($PREV_DATE - $DATE)" >> $MESSAGE
   echo "(записи: [$REC_NO; $REC_NO_LAST) )" >> $MESSAGE
 
-  echo -e "\n1)$IP_COUNT IP адресов с наибольшим количеством запросов" >> $MESSAGE
+  echo -e "\n1) $IP_COUNT IP адресов с наибольшим количеством запросов" >> $MESSAGE
   cat $LOG | awk -v first="$REC_NO" -v last="$REC_NO_LAST" 'first <= NR && NR < last && /GET/{ ipcount[$1]++ } END { for (i in ipcount) { printf "%4d раз - IP: %s\n", ipcount[i], i } }' | sort -rnk1 | head -$IP_COUNT >> $MESSAGE
 
-  echo -e "\n2)$ADDR_COUNT запрашиваемых адресов с наибольшим количеством запросов" >> $MESSAGE
+  echo -e "\n2) $ADDR_COUNT запрашиваемых адресов с наибольшим количеством запросов" >> $MESSAGE
   cat $LOG | awk -v first="$REC_NO" -v last="$REC_NO_LAST" 'first <= NR && NR < last && /GET/{ addrcount[$11]++ } END { for (i in addrcount) { printf "%4d раз - addr: %50s\n", addrcount[i], i } }' | sort -rnk1 | head -$ADDR_COUNT >> $MESSAGE
 
   echo -e "\n3) Полный список запросов с кодом возврата, отличающегося от 200 и 301" >> $MESSAGE
