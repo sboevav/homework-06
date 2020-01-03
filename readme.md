@@ -2,7 +2,6 @@
 
 Скрипт запускается периодически с помощью сервиса, реализованного на systemd.
 	main.sh - скрипт, запускаемый вагрантом при развертывании машины. Здесь мы устанавливаем  mail для отправки создаваемой почты, копируем необходимые файлы и запускаем наш сервис  
-
 	```
 	sudo mkdir -p ~root/.ssh
 	sudo cp ~vagrant/.ssh/auth* ~root/.ssh
@@ -19,8 +18,7 @@
 	sudo systemctl enable watchlog.timer
 	sudo systemctl start watchlog.timer
 	```
-
-	watchlog.timer - наш таймер, по которому запускается сервис watchlog.service  
+watchlog.timer - наш таймер, по которому запускается сервис watchlog.service  
 	```
 	[Unit]
 	Description=Runs watchlog script every 5 seconds
@@ -36,8 +34,7 @@
 	[Install]
 	WantedBy=multi-user.target
 	```
-
-	watchlog.service - сервис, запускающий наш скрипт с параметрами  
+watchlog.service - сервис, запускающий наш скрипт с параметрами  
 	```
 	[Unit]
 	Description=My watchlog service
@@ -48,7 +45,7 @@
 	ExecStart=/opt/watchlog.sh $LOG $EMAIL $RECORD_COUNT $IP_COUNT $ADDR_COUNT
 	```
 
-	watchlog - параметры запуска скрипта  
+watchlog - параметры запуска скрипта  
 	```
 	# Обрабатываемый лог-файл
 	LOG=/var/log/watchlog.log
