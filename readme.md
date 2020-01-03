@@ -18,7 +18,9 @@
 	sudo systemctl enable watchlog.timer
 	sudo systemctl start watchlog.timer
 	```
-		watchlog.timer - наш таймер, по которому запускается сервис watchlog.service  
+
+	watchlog.timer - наш таймер, по которому запускается сервис watchlog.service  
+
 	```
 	[Unit]
 	Description=Runs watchlog script every 5 seconds
